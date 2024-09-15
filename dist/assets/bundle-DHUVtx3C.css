@@ -1,0 +1,40 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.menu {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+}
+
+
+.menu__link:focus {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 20px;
+}
+
+.menu__link {
+color: var(--black-color);
+
+font-size: 14px;
+font-weight: 400;
+line-height: 20px;
+display: flex;
+align-items: center;
+gap: 10px;   
+}
+
+.menu__counter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--black-color);
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 400;
+line-height: 20px;
+}

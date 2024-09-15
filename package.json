@@ -1,0 +1,26 @@
+{
+  "name": "project-magazine",
+  "version": "1.0.0",
+  "description": "book-store",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c --watch"
+  },
+  "keywords": [
+    "book-store"
+  ],
+  "author": "Kirill Kotenev <bakurfu32@yandex.ru>",
+  "license": "ISC",
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "eslint": "^9.9.1",
+    "globals": "^15.9.0",
+    "rollup": "^4.21.1",
+    "rollup-plugin-import-css": "^3.5.1"
+  },
+  "dependencies": {
+    "on-change": "^5.0.1"
+  }
+}
