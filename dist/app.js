@@ -15,6 +15,12 @@
         render() {
             return
         }
+
+        errorHandler(error) {
+            if(error instanceof Error) {
+                console.log("Application is failed", error.message);
+            }
+        }
         unmount() {
             return
         }
@@ -1219,14 +1225,19 @@
             this.appState.favorites = this.appState.favorites.filter((b) => b.key !== this.cardState.key);
         }
 
+
+        #setSearchBookId() {
+            this.appState.searchBookId = this.cardState.edition_key[0];
+        }
+
         render() {
             const isFavorites = this.appState.favorites.find(b => b.key === this.cardState.key);
             this.element.innerHTML = "";
             this.element.classList.add("card");
             this.element.innerHTML = `
-        <div class="card__image">
+        <a href="#about-book" class="card__image">
             <img src="https://covers.openlibrary.org/b/id/${this.cardState.cover_i}-S.jpg" alt="Обложка">
-        </div>
+        </a>
         <div class="card__info">
             <div class="card__genre">
                 ${this.cardState.subject ? this.cardState.subject?.slice(0,1)?.join(" & ") : "Не задано"}
@@ -1263,6 +1274,10 @@
                 this.element.querySelector("button").addEventListener("click", this.#addFavoriteBook.bind(this));
 
             }
+
+
+            this.element.querySelector("a").addEventListener("click", this.#setSearchBookId.bind(this));
+
             return this.element
         }
 
@@ -1303,6 +1318,52 @@
 
     }
 
+    class Pagination extends DivCoomponent {
+        constructor(state) {
+            super();
+            this.state = state;
+        
+        }
+
+
+        #decreasePage() {
+            this.state.page -= 1;
+
+        }
+
+        #increasePage() {
+            this.state.page += 1;
+
+        }
+
+
+
+        render() {
+            this.element.innerHTML = "";
+            this.element.classList.add("pagination");
+            this.element.innerHTML = `
+        <button id="prev__page" class="pagination__btn">
+        <img src="../../../static/arrowBack.svg" alt="Arrow back">
+         Предыдущая страница
+        </button>
+
+       <button id="next__page" class="pagination__btn">
+        Следующая страница
+        <img src="../../../static/arrownext.svg" alt="Arrow next">
+   
+        </button>
+   
+        `;
+           this.element.querySelector("#prev__page").addEventListener("click", this.#decreasePage.bind(this));
+           this.element.querySelector("#next__page").addEventListener("click", this.#increasePage.bind(this));
+
+            return this.element
+        }
+
+    }
+
+    // import Swiper from 'swiper'; 
+
     class MainPage extends AbstractPage {
         constructor(appState) {
             super();
@@ -1310,6 +1371,7 @@
             this.appState = appState;
             this.appState = onChange(this.appState, this.appStateHook.bind(this));
             this.state = onChange(this.state, this.stateHook.bind(this));
+            
         }
 
         state = {
@@ -1317,11 +1379,12 @@
             numFound: 0,
             isLoading: false,
             searchValue: "",
-            offset: null
+            page: 1,
+            limit: 12
         }
 
         appStateHook(path) {
-           if(path === "favorites") {
+           if(path === "favorites" || path ==="searchBookId" ) {
             this.render();
            }
 
@@ -1331,23 +1394,35 @@
 
 
         async stateHook(path) {
-            if(path === "searchValue") {
+            if(path === "searchValue" || path === "page") {
 
                 this.state.isLoading = true;
-                const data = await this.getBookList(this.state.searchValue, this.state.offset);
+                const data = await this.getBookList(this.state.searchValue, this.state.page, this.state.limit);
                 this.state.bookList = data.docs;
                 this.state.numFound = data.numFound;
                 this.state.isLoading = false;
 
             }
-            if(path === "bookList" || path === "numFound" || path === "isLoading") {
-                this.render();
+
+            switch(path) {
+                case "bookList": this.render();
+                break;
+
+                case "numFound": this.render();
+                break;
+
+                case "isLoading": this.render();
+                break;
             }
+
+            // if(path === "bookList" || path === "numFound" || path === "isLoading") {
+            //     this.render()
+            // }
         }
 
 
-    async getBookList(searchValue, offset) {
-        const getData = await fetch(`https://openlibrary.org/search.json?q=${searchValue}&offset=${offset}`);
+    async getBookList(searchValue, page, limit) {
+        const getData = await fetch(`https://openlibrary.org/search.json?q=${searchValue}&page=${page}&limit=${limit}`);
         return getData.json()
     }
 
@@ -1360,9 +1435,12 @@
             main.innerHTML = ``;
             const searchComponent = new Search(this.state).render();
             const cardlist = new CardList(this.appState, this.state).render();
+            const paginationComponent = new Pagination(this.state);
             main.append(searchComponent);
             main.append(cardlist);
-
+            if(this.state.bookList.length) {
+                main.append(paginationComponent.render());
+            }
             this.app.innerHTML = "";
             this.app.append(main);
             this.renderHeader();
@@ -1426,6 +1504,85 @@
         }
     }
 
+    class AboutBookPage extends AbstractPage {
+        state = {
+            book: null,
+            isLoading: false
+        }
+        constructor(appState) {
+            super();
+            this.setTitle("Информация о книги");
+            this.appState = appState;
+            this.appState = onChange(this.appState, this.appStateHook.bind(this));
+            this.state = onChange(this.state, this.stateHook.bind(this));
+            this.#setBookData();
+            
+        }
+
+        stateHook(path) {
+            if(path === "isLoading" || path === "book"){
+                this.render();
+            }
+        }
+
+      
+
+        appStateHook(path) {
+           if(path === "favorites" || path ==="searchBookId") {
+            this.render();
+           }
+
+
+        
+        }
+
+
+        async #setBookData() {
+            try {
+                this.state.isLoading = true;
+                const book = await this.#loadBook();
+                this.state.book = book;
+                this.state.isLoading = false;
+            } catch (e) {
+                this.errorHandler(e);
+            }
+        }
+
+        async #loadBook () {
+            try {
+                const data = await fetch(`https://openlibrary.org/books/${this.appState.searchBookId}.json`);
+                return data.json()
+            } catch(e) {
+                this.errorHandler(e);
+            }
+
+        }
+
+
+        unmount() {
+            onChange.unsubscribe(this.appState);
+            onChange.unsubscribe(this.state);
+        }
+
+        render() {
+            const main = document.createElement("div");
+            main.innerHTML = `
+        <h1> ${this.state.isLoading ? "Загрузка..." : this.state.book.title} </h1>
+
+       
+        `;
+            this.app.innerHTML = "";
+            this.app.append(main);
+            this.renderHeader();
+
+        }
+
+        renderHeader() {
+            const header = new Header(this.appState).render();
+            this.app.prepend(header);
+        }
+    }
+
     class App {
 
         routes = [
@@ -1437,12 +1594,18 @@
             {
                 path: "#favorites",
                 page: FavoritePage,
+            },
+
+            {
+                path: "#about-book",
+                page: AboutBookPage,
             }
         ]
 
 
         appState = {
-            favorites: []
+            favorites: [],
+            searchBookId: null
         }
 
         constructor() {

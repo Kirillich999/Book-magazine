@@ -12,6 +12,12 @@ export class AbstractPage {
     render() {
         return
     }
+
+    errorHandler(error) {
+        if(error instanceof Error) {
+            console.log("Application is failed", error.message)
+        }
+    }
     unmount() {
         return
     }

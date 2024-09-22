@@ -3,6 +3,7 @@
 import { MainPage } from "./pages/main/main.js"
 import { NotFoundPage } from "./pages/not-found/not-found.js"
 import { FavoritePage } from "./pages/favorites/favorites.js"
+import { AboutBookPage } from "./pages/about-book/about-book.js"
 
 class App {
 
@@ -15,12 +16,18 @@ class App {
         {
             path: "#favorites",
             page: FavoritePage,
+        },
+
+        {
+            path: "#about-book",
+            page: AboutBookPage,
         }
     ]
 
 
     appState = {
-        favorites: []
+        favorites: [],
+        searchBookId: null
     }
 
     constructor() {
